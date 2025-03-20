@@ -40,7 +40,7 @@ A simple **chat application** built with **Flask**, where users can send and rec
 ## 🔧 **Installation & Setup (Run Locally)**
 1️⃣ **Clone the repository**  
 ```bash
-git clone https://github.com/yourusername/chatting-api.git
+git clone https://github.com/DHIRAJ-GHOLAP/secure-chat-api.git
 cd chatting-api
 ```
 
