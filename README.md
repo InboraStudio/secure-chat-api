@@ -61,9 +61,9 @@ python server.py
   ```
 - Replace `12345` with any **5-digit room number**.
 
----
+# 🚀 Secure Chat API - cURL Commands
 
-### This document contains all **cURL commands** needed to manage **chat rooms, messages, and admin functionalities** in the **Secure Chat API**.
+This document contains all **cURL commands** needed to manage **chat rooms, messages, admin functionalities, and authentication** in the **Secure Chat API**.
 
 ---
 
@@ -85,13 +85,11 @@ curl -X POST "https://chattingcurl.onrender.com/chat/12345" -H "Content-Type: ap
 ```
 📌 **Replace** `12345` with your room ID and `securepass` with your room password.
 
-
 ### **3️⃣ Get Messages from a Chat Room (If IP is Verified, No Password Needed)**
 ```bash
 curl -X GET "https://chattingcurl.onrender.com/chat/12345"
 ```
 📌 **Only works for verified IP users!**
-
 
 ### **4️⃣ Get Messages Using Password (If IP is NOT Verified)**
 ```bash
@@ -99,25 +97,29 @@ curl -X GET "https://chattingcurl.onrender.com/chat/12345?password=securepass"
 ```
 📌 **Use the password if your IP is not verified.**
 
+### **5️⃣ View Chat Messages in Web Browser**
+```bash
+curl -X GET "https://chattingcurl.onrender.com/chat/12345/web?password=securepass"
+```
+📌 **Opens chat messages in a web-based UI.**
+
 ---
 
 ## **🔐 Admin Panel Commands**
 
-### **5️⃣ Verify a User's IP (Admin Only)**
+### **6️⃣ Verify a User's IP (Admin Only)**
 ```bash
 curl -X POST "https://chattingcurl.onrender.com/admin/verify_ip" -H "Content-Type: application/json" -d '{"room_id":"12345","ip":"192.168.1.10","password":"securepass"}'
 ```
 📌 **Replace `192.168.1.10` with the IP you want to verify.**
 
-
-### **6️⃣ Clear All Messages in a Room (Admin Only)**
+### **7️⃣ Clear All Messages in a Room (Admin Only)**
 ```bash
 curl -X POST "https://chattingcurl.onrender.com/admin/clear_chat" -H "Content-Type: application/json" -d '{"room_id":"12345","password":"securepass"}'
 ```
 📌 **Only admins can clear chat history.**
 
-
-### **7️⃣ Delete a Chat Room (Admin Only)**
+### **8️⃣ Delete a Chat Room (Admin Only)**
 ```bash
 curl -X POST "https://chattingcurl.onrender.com/admin/delete_room" -H "Content-Type: application/json" -d '{"room_id":"12345","password":"securepass"}'
 ```
@@ -127,13 +129,22 @@ curl -X POST "https://chattingcurl.onrender.com/admin/delete_room" -H "Content-T
 
 ## **🌍 Miscellaneous Commands**
 
-### **8️⃣ Check Your Public IP (For Verification)**
+### **9️⃣ Check Your Public IP (For Verification)**
 ```bash
 curl ifconfig.me
 ```
 📌 **Use this command to find your IP before requesting admin verification.**
 
+### **🔟 Clear Messages in a Room (For Any User with Access)**
+```bash
+curl -X POST "https://chattingcurl.onrender.com/chat/12345/clear" -H "Content-Type: application/json" -d '{"password":"securepass"}'
+```
+📌 **Allows authorized users to clear chat messages.**
+
 ---
+
+# ✅ **Now Your Chat API is Ready to Use!** 🚀
+💡 **Let me know if you need additional features or security improvements!** 😊
 
 # ✅ **Now Your Chat API is Ready to Use!** 🚀
 💡 **Let me know if you need additional features or security improvements!** 😊
