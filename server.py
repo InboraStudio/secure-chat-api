@@ -49,39 +49,152 @@ def get_client_ip():
 @app.route('/')
 def home():
     return """
-    <html>
+    <!DOCTYPE html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Secure Chat API 🚀</title>
         <style>
-            body { font-family: Arial, sans-serif; text-align: center; background-color: #f8f8f8; padding: 20px; }
-            h2 { color: #333; }
-            .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-            ul { text-align: left; }
-            .btn { padding: 10px 15px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 5px; }
-            .btn:hover { background: #218838; }
+            /* Global Styles */
+            body {
+                font-family: 'Arial', sans-serif;
+                background-color: #f0f2f5;
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+            }
+
+            .container {
+                max-width: 600px;
+                background: white;
+                padding: 30px;
+                border-radius: 12px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                text-align: center;
+            }
+
+            h2 {
+                color: #333;
+                margin-bottom: 10px;
+            }
+
+            p {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            ul {
+                text-align: left;
+                list-style: none;
+                padding: 0;
+            }
+
+            li {
+                background: #e3f2fd;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+
+            a {
+                text-decoration: none;
+                color: #007bff;
+                font-weight: bold;
+            }
+
+            hr {
+                border: 0;
+                height: 1px;
+                background: #ddd;
+                margin: 20px 0;
+            }
+
+            /* Form Styles */
+            .form-group {
+                text-align: left;
+                margin-bottom: 15px;
+            }
+
+            label {
+                font-weight: bold;
+                font-size: 14px;
+                display: block;
+                margin-bottom: 5px;
+            }
+
+            input {
+                width: 100%;
+                padding: 10px;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+            }
+
+            .btn {
+                width: 100%;
+                padding: 12px;
+                background: #007bff;
+                color: white;
+                border: none;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                border-radius: 5px;
+                transition: all 0.3s ease;
+            }
+
+            .btn:hover {
+                background: #0056b3;
+            }
+
+            /* Responsive Design */
+            @media (max-width: 600px) {
+                .container {
+                    width: 90%;
+                    padding: 20px;
+                }
+            }
         </style>
     </head>
     <body>
+
         <div class="container">
-            <h2>Welcome to the Secure Chat API 🚀</h2>
-            <p>Use the following endpoints:</p>
+            <h2>Welcome to Secure Chat API 🚀</h2>
+            <p>A secure chat system with **IP verification and password protection**.</p>
+            
+            <h3>📌 API Endpoints:</h3>
             <ul>
-                <li><strong>Create Room:</strong> <code>POST /room/create</code></li>
-                <li><strong>Verify IP:</strong> <code>POST /room/&lt;room_id&gt;/verify_ip</code></li>
-                <li><strong>View Chat Room:</strong> <a href="/chat/12345/web?password=securepass"><code>/chat/&lt;room_id&gt;/web</code></a></li>
-                <li><strong>Send Message:</strong> <code>POST /chat/&lt;room_id&gt;</code></li>
-                <li><strong>Get Messages:</strong> <code>GET /chat/&lt;room_id&gt;</code></li>
+                <li>🔹 <strong>Create Room:</strong> <code>POST /room/create</code></li>
+                <li>🔹 <strong>Verify IP:</strong> <code>POST /room/&lt;room_id&gt;/verify_ip</code></li>
+                <li>🔹 <strong>View Chat Room:</strong> <a href="/chat/12345/web?password=securepass"><code>/chat/&lt;room_id&gt;/web</code></a></li>
+                <li>🔹 <strong>Send Message:</strong> <code>POST /chat/&lt;room_id&gt;</code></li>
+                <li>🔹 <strong>Get Messages:</strong> <code>GET /chat/&lt;room_id&gt;</code></li>
             </ul>
+
             <hr>
-            <h3>Create a New Chat Room</h3>
+
+            <h3>📝 Create a New Chat Room</h3>
             <form method="POST" action="/room/create">
-                <label>Room ID:</label><br>
-                <input type="text" name="room_id" required><br><br>
-                <label>Password:</label><br>
-                <input type="password" name="password" required><br><br>
-                <input type="submit" class="btn" value="Create Room">
+                <div class="form-group">
+                    <label>Room ID:</label>
+                    <input type="text" name="room_id" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn">Create Room</button>
             </form>
         </div>
+
     </body>
     </html>
     """
@@ -170,6 +283,60 @@ def chat_web(room_id):
 
     messages = chat_rooms.get(room_id, [])
     return render_template("chat.html", room_id=room_id, messages=messages)
+
+
+# ✅ Admin Dashboard Route
+@app.route('/admin')
+def admin_panel():
+    return render_template("admin.html")
+
+# ✅ Admin Route: Verify a User's IP
+@app.route('/admin/verify_ip', methods=['POST'])
+def admin_verify_ip():
+    room_id = request.form.get("room_id")
+    ip = request.form.get("ip")
+    password = request.form.get("password")
+
+    if not room_id or not ip or not password:
+        return jsonify({"error": "All fields are required!"}), 400
+
+    # Check if the password is correct
+    if room_passwords.get(room_id) != password:
+        return jsonify({"error": "Unauthorized access!"}), 401
+
+    # Add the IP to the verified list
+    if room_id not in room_verified_ips:
+        room_verified_ips[room_id] = []
+    
+    room_verified_ips[room_id].append(ip)
+    return jsonify({"success": True, "message": f"IP {ip} verified for room {room_id}!"})
+
+# ✅ Admin Route: Clear Chat Messages
+@app.route('/admin/clear_chat', methods=['POST'])
+def admin_clear_chat():
+    room_id = request.form.get("room_id")
+    password = request.form.get("password")
+
+    if room_passwords.get(room_id) != password:
+        return jsonify({"error": "Unauthorized access!"}), 401
+
+    if room_id in chat_rooms:
+        chat_rooms[room_id] = []
+    return jsonify({"success": True, "message": "Chat cleared successfully!"})
+
+# ✅ Admin Route: Delete Chat Room
+@app.route('/admin/delete_room', methods=['POST'])
+def admin_delete_room():
+    room_id = request.form.get("room_id")
+    password = request.form.get("password")
+
+    if room_passwords.get(room_id) != password:
+        return jsonify({"error": "Unauthorized access!"}), 401
+
+    chat_rooms.pop(room_id, None)
+    room_verified_ips.pop(room_id, None)
+    room_passwords.pop(room_id, None)
+    return jsonify({"success": True, "message": f"Room {room_id} deleted!"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
