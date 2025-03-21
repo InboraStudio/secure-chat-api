@@ -146,8 +146,6 @@ curl -X POST "https://chattingcurl.onrender.com/chat/12345/clear" -H "Content-Ty
 # ✅ **Now Your Chat API is Ready to Use!** 🚀
 💡 **Let me know if you need additional features or security improvements!** 😊
 
-# ✅ **Now Your Chat API is Ready to Use!** 🚀
-💡 **Let me know if you need additional features or security improvements!** 😊
 
 
 ## 🔐 **Security Features Added**
