@@ -1,18 +1,34 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_file
+from flask_socketio import SocketIO, emit, join_room, leave_room
 import jwt
 import datetime
 import os
+import base64
+from io import BytesIO
+from PIL import Image
+from cryptography.fernet import Fernet
+import json
+import time
+import socket
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Secret keys for JWT authentication
 SECRET_KEY = os.getenv("SECRET_KEY", "mysecretkey")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
+ENCRYPTION_KEY = Fernet.generate_key()
+fernet = Fernet(ENCRYPTION_KEY)
 
 # Store messages securely
 chat_rooms = {}
 room_passwords = {}
 room_verified_ips = {}
+user_profiles = {}
+online_users = {}
+message_reactions = {}
+typing_users = {}
+user_socket_map = {}  # Map user_id to socket_id
 
 # Function to generate a JWT token for authentication
 def generate_token(room_id):
@@ -22,188 +38,31 @@ def generate_token(room_id):
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
-
-
-# **FIXED: Clear Chat Route**
-@app.route('/chat/<room_id>/clear', methods=['POST'])
-def clear_chat(room_id):
-    if room_id in chat_rooms:
-        chat_rooms[room_id] = []
-    return jsonify({"success": True, "message": "Chat cleared!"})
-
 # Function to verify JWT token
 def verify_token(token):
     try:
         decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
         return decoded["room_id"]
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
+    except:
         return None
 
 # Function to get client's IP
 def get_client_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr)
 
+def encrypt_message(message):
+    return fernet.encrypt(message.encode()).decode()
+
+def decrypt_message(encrypted_message):
+    return fernet.decrypt(encrypted_message.encode()).decode()
+
 # Default homepage route
 @app.route('/')
 def home():
-    return """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Secure Chat API 🚀</title>
-        <style>
-            /* Global Styles */
-            body {
-                font-family: 'Arial', sans-serif;
-                background-color: #f0f2f5;
-                margin: 0;
-                padding: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-            }
-
-            .container {
-                max-width: 600px;
-                background: white;
-                padding: 30px;
-                border-radius: 12px;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                text-align: center;
-            }
-
-            h2 {
-                color: #333;
-                margin-bottom: 10px;
-            }
-
-            p {
-                color: #666;
-                font-size: 14px;
-                margin-bottom: 20px;
-            }
-
-            ul {
-                text-align: left;
-                list-style: none;
-                padding: 0;
-            }
-
-            li {
-                background: #e3f2fd;
-                padding: 10px;
-                margin: 5px 0;
-                border-radius: 5px;
-                font-size: 14px;
-            }
-
-            a {
-                text-decoration: none;
-                color: #007bff;
-                font-weight: bold;
-            }
-
-            hr {
-                border: 0;
-                height: 1px;
-                background: #ddd;
-                margin: 20px 0;
-            }
-
-            /* Form Styles */
-            .form-group {
-                text-align: left;
-                margin-bottom: 15px;
-            }
-
-            label {
-                font-weight: bold;
-                font-size: 14px;
-                display: block;
-                margin-bottom: 5px;
-            }
-
-            input {
-                width: 100%;
-                padding: 10px;
-                font-size: 14px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-
-            .btn {
-                width: 100%;
-                padding: 12px;
-                background: #007bff;
-                color: white;
-                border: none;
-                font-size: 16px;
-                font-weight: bold;
-                cursor: pointer;
-                border-radius: 5px;
-                transition: all 0.3s ease;
-            }
-
-            .btn:hover {
-                background: #0056b3;
-            }
-
-            /* Responsive Design */
-            @media (max-width: 600px) {
-                .container {
-                    width: 90%;
-                    padding: 20px;
-                }
-            }
-        </style>
-    </head>
-    <body>
-
-        <div class="container">
-            <h2>Welcome to Secure Chat API 🚀</h2>
-            <p>A secure chat system with **IP verification and password protection**.</p>
-            
-            <h3>📌 API Endpoints:</h3>
-            <ul>
-                <li>🔹 <strong>Create Room:</strong> <code>POST /room/create</code></li>
-                <li>🔹 <strong>Verify IP:</strong> <code>POST /room/&lt;room_id&gt;/verify_ip</code></li>
-                <li>🔹 <strong>View Chat Room:</strong> <a href="/chat/12345/web?password=securepass"><code>/chat/&lt;room_id&gt;/web</code></a></li>
-                <li>🔹 <strong>Send Message:</strong> <code>POST /chat/&lt;room_id&gt;</code></li>
-                <li>🔹 <strong>Get Messages:</strong> <code>GET /chat/&lt;room_id&gt;</code></li>
-            </ul>
-
-            <hr>
-
-            <h3>📝 Create a New Chat Room</h3>
-            <form method="POST" action="/room/create">
-                <div class="form-group">
-                    <label>Room ID:</label>
-                    <input type="text" name="room_id" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Password:</label>
-                    <input type="password" name="password" required>
-                </div>
-
-                <button type="submit" class="btn">Create Room</button>
-            </form>
-        </div>
-
-    </body>
-    </html>
-    """
-
-from flask import request
+    return render_template('index.html')
 
 @app.route('/room/create', methods=['POST'])
 def create_room():
-    # Check if request is JSON or form data
     if request.content_type == "application/json":
         data = request.get_json()
         room_id = data.get("room_id")
@@ -212,15 +71,221 @@ def create_room():
         room_id = request.form.get("room_id")
         password = request.form.get("password")
 
-    # Validate inputs
     if not room_id or not password:
         return jsonify({"error": "Room ID and password are required!"}), 400
 
     room_passwords[room_id] = password
     room_verified_ips[room_id] = []
     chat_rooms[room_id] = []
+    message_reactions[room_id] = {}
+    typing_users[room_id] = set()
 
     return jsonify({"success": True, "message": f"Room {room_id} created successfully!"})
+
+@app.route('/user/profile', methods=['POST'])
+def create_profile():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    username = data.get("username")
+    avatar = data.get("avatar")
+
+    if not user_id or not username:
+        return jsonify({"error": "User ID and username are required!"}), 400
+
+    user_profiles[user_id] = {
+        "username": username,
+        "avatar": avatar,
+        "created_at": time.time()
+    }
+
+    return jsonify({"success": True, "message": "Profile created successfully!"})
+
+@app.route('/user/profile/<user_id>', methods=['GET'])
+def get_profile(user_id):
+    if user_id in user_profiles:
+        return jsonify(user_profiles[user_id])
+    return jsonify({"error": "Profile not found!"}), 404
+
+@socketio.on('join')
+def on_join(data):
+    room = data['room']
+    user_id = data['user_id']
+    
+    # Store the mapping between user_id and socket_id
+    user_socket_map[user_id] = request.sid
+    
+    # Initialize room data if not exists
+    if room not in chat_rooms:
+        chat_rooms[room] = []
+    if room not in online_users:
+        online_users[room] = set()
+    if room not in message_reactions:
+        message_reactions[room] = {}
+    if room not in typing_users:
+        typing_users[room] = set()
+    
+    # Add user to room
+    join_room(room)
+    online_users[room].add(user_id)
+    
+    # Emit updated online count to all users in the room
+    emit('online_count', {
+        'room': room,
+        'count': len(online_users[room])
+    }, room=room, broadcast=True)
+    
+    # Emit status message to all users in the room
+    emit('status', {
+        'msg': f'👋 {user_id} has joined the room'
+    }, room=room, broadcast=True)
+
+@socketio.on('leave')
+def on_leave(data):
+    room = data['room']
+    user_id = data['user_id']
+    
+    if room in online_users:
+        online_users[room].discard(user_id)
+        if user_id in typing_users.get(room, set()):
+            typing_users[room].discard(user_id)
+        
+        # Emit updated online count to all users in the room
+        emit('online_count', {
+            'room': room,
+            'count': len(online_users[room])
+        }, room=room, broadcast=True)
+        
+        # Emit status message to all users in the room
+        emit('status', {
+            'msg': f'👋 {user_id} has left the room'
+        }, room=room, broadcast=True)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    # Find the user_id associated with this socket
+    user_id = None
+    for uid, sid in user_socket_map.items():
+        if sid == request.sid:
+            user_id = uid
+            break
+    
+    if user_id:
+        # Clean up user from all rooms
+        for room in list(online_users.keys()):
+            if user_id in online_users[room]:
+                online_users[room].discard(user_id)
+                if user_id in typing_users.get(room, set()):
+                    typing_users[room].discard(user_id)
+                
+                # Emit updated online count to all users in the room
+                emit('online_count', {
+                    'room': room,
+                    'count': len(online_users[room])
+                }, room=room, broadcast=True)
+                
+                # Emit status message to all users in the room
+                emit('status', {
+                    'msg': f'👋 {user_id} has disconnected'
+                }, room=room, broadcast=True)
+        
+        # Remove the user from the socket mapping
+        del user_socket_map[user_id]
+
+@socketio.on('message')
+def handle_message(data):
+    room = data['room']
+    user_id = data['user_id']
+    message = data['message']
+    
+    # Initialize room messages if not exists
+    if room not in chat_rooms:
+        chat_rooms[room] = []
+    
+    # Add message with timestamp and formatted date/time
+    timestamp = int(time.time() * 1000)
+    current_time = datetime.datetime.now()
+    formatted_date = current_time.strftime("%Y-%m-%d")
+    formatted_time = current_time.strftime("%I:%M %p")  # 12-hour format with AM/PM
+    
+    message_data = {
+        'user_id': user_id,
+        'message': message,
+        'timestamp': timestamp,
+        'date': formatted_date,
+        'time': formatted_time,
+        'is_sent': True  # This will be used to identify sent messages
+    }
+    
+    chat_rooms[room].append(message_data)
+    
+    # Keep only last 100 messages per room
+    if len(chat_rooms[room]) > 100:
+        chat_rooms[room] = chat_rooms[room][-100:]
+    
+    # Emit message to room with sender information
+    emit('message', message_data, room=room, broadcast=True)
+
+@socketio.on('typing')
+def handle_typing(data):
+    room = data['room']
+    user_id = data['user_id']
+    is_typing = data['is_typing']
+    
+    if room not in typing_users:
+        typing_users[room] = set()
+    
+    if is_typing:
+        typing_users[room].add(user_id)
+    else:
+        typing_users[room].discard(user_id)
+    
+    # Emit typing status to room
+    emit('typing_status', {
+        'typing_users': list(typing_users[room])
+    }, room=room)
+
+@socketio.on('reaction')
+def handle_reaction(data):
+    room = data['room']
+    message_id = data['message_id']
+    user_id = data['user_id']
+    reaction = data['reaction']
+
+    if room in message_reactions and message_id in message_reactions[room]:
+        if reaction not in message_reactions[room][message_id]:
+            message_reactions[room][message_id][reaction] = set()
+        message_reactions[room][message_id][reaction].add(user_id)
+        
+        emit('reaction_update', {
+            'message_id': message_id,
+            'reactions': {
+                r: list(users) for r, users in message_reactions[room][message_id].items()
+            }
+        }, room=room)
+
+@app.route('/chat/<room_id>/messages', methods=['GET'])
+def get_messages(room_id):
+    if room_id not in chat_rooms:
+        chat_rooms[room_id] = []
+    
+    # Get the requesting user's ID from the query parameters
+    user_id = request.args.get('user_id')
+    
+    # Mark messages as sent/received based on the requesting user
+    messages = []
+    for msg in chat_rooms[room_id]:
+        msg_copy = msg.copy()
+        msg_copy['is_sent'] = msg_copy['user_id'] == user_id
+        messages.append(msg_copy)
+    
+    return jsonify(messages)
+
+@app.route('/chat/<room_id>/clear', methods=['POST'])
+def clear_chat(room_id):
+    if room_id in chat_rooms:
+        chat_rooms[room_id] = []
+        message_reactions[room_id] = {}
+    return jsonify({"success": True, "message": "Chat cleared!"})
 
 # Route to verify an IP (Room creator must approve)
 @app.route('/room/<room_id>/verify_ip', methods=['POST'])
@@ -256,21 +321,6 @@ def send_message(room_id):
 
     chat_rooms[room_id].append(f"[{client_ip}] {message}")
     return jsonify({"success": True, "message": "Message sent securely!"})
-@app.route('/chat/<room_id>', methods=['GET'])
-def get_messages(room_id):
-    client_ip = get_client_ip()
-    password = request.args.get("password")
-
-    # 🔍 Debugging: Print client IP and verified IPs list
-    print(f"Client IP: {client_ip}")
-    print(f"Verified IPs for Room {room_id}: {room_verified_ips.get(room_id, [])}")
-
-    # ✅ Allow access if the user's IP is verified OR they provide the correct password
-    if client_ip in room_verified_ips.get(room_id, []) or room_passwords.get(room_id) == password:
-        messages = chat_rooms.get(room_id, [])
-        return jsonify({"messages": messages})
-    
-    return jsonify({"error": "Access denied! Your IP is not verified and no valid password provided."}), 401
 
 # Route to view messages in a browser (Password-Protected)
 @app.route('/chat/<room_id>/web', methods=['GET'])
@@ -283,7 +333,6 @@ def chat_web(room_id):
 
     messages = chat_rooms.get(room_id, [])
     return render_template("chat.html", room_id=room_id, messages=messages)
-
 
 # ✅ Admin Dashboard Route
 @app.route('/admin')
@@ -339,4 +388,14 @@ def admin_delete_room():
     return jsonify({"success": True, "message": f"Room {room_id} deleted!"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    # Get the local IP address
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    
+    print(f"\nServer is running!")
+    print(f"Local IP: {local_ip}")
+    print(f"Access the chat at: http://{local_ip}:10000")
+    print("\nPress Ctrl+C to stop the server.\n")
+    
+    # Run the server on all network interfaces
+    socketio.run(app, host='0.0.0.0', port=10000, debug=True)
