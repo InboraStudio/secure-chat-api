@@ -2,7 +2,6 @@ from flask_socketio import emit, join_room, leave_room
 from app.utils.helpers import get_current_time
 from app.config.config import MAX_MESSAGES_PER_ROOM
 
-# Store messages securely
 chat_rooms = {}
 room_passwords = {}
 room_verified_ips = {}
@@ -10,7 +9,7 @@ user_profiles = {}
 online_users = {}
 message_reactions = {}
 typing_users = {}
-user_socket_map = {}  # Map user_id to socket_id
+user_socket_map = {}
 
 def register_socket_events(socketio):
     @socketio.on('join')
@@ -18,10 +17,8 @@ def register_socket_events(socketio):
         room = data['room']
         user_id = data['user_id']
         
-        # Store the mapping between user_id and socket_id
         user_socket_map[user_id] = request.sid
         
-        # Initialize room data if not exists
         if room not in chat_rooms:
             chat_rooms[room] = []
         if room not in online_users:
@@ -31,17 +28,14 @@ def register_socket_events(socketio):
         if room not in typing_users:
             typing_users[room] = set()
         
-        # Add user to room
         join_room(room)
         online_users[room].add(user_id)
         
-        # Emit updated online count to all users in the room
         emit('online_count', {
             'room': room,
             'count': len(online_users[room])
         }, room=room, broadcast=True)
         
-        # Emit status message to all users in the room
         emit('status', {
             'msg': f'👋 {user_id} has joined the room'
         }, room=room, broadcast=True)
@@ -56,13 +50,11 @@ def register_socket_events(socketio):
             if user_id in typing_users.get(room, set()):
                 typing_users[room].discard(user_id)
             
-            # Emit updated online count to all users in the room
             emit('online_count', {
                 'room': room,
                 'count': len(online_users[room])
             }, room=room, broadcast=True)
             
-            # Emit status message to all users in the room
             emit('status', {
                 'msg': f'👋 {user_id} has left the room'
             }, room=room, broadcast=True)
@@ -73,11 +65,9 @@ def register_socket_events(socketio):
         user_id = data['user_id']
         message = data['message']
         
-        # Initialize room messages if not exists
         if room not in chat_rooms:
             chat_rooms[room] = []
         
-        # Add message with timestamp and formatted date/time
         time_data = get_current_time()
         message_data = {
             'user_id': user_id,
@@ -90,11 +80,9 @@ def register_socket_events(socketio):
         
         chat_rooms[room].append(message_data)
         
-        # Keep only last 100 messages per room
         if len(chat_rooms[room]) > MAX_MESSAGES_PER_ROOM:
             chat_rooms[room] = chat_rooms[room][-MAX_MESSAGES_PER_ROOM:]
         
-        # Emit message to room with sender information
         emit('message', message_data, room=room, broadcast=True)
 
     @socketio.on('typing')
@@ -119,7 +107,6 @@ def register_socket_events(socketio):
 
     @socketio.on('disconnect')
     def handle_disconnect():
-        # Find the user_id associated with this socket
         user_id = None
         for uid, sid in user_socket_map.items():
             if sid == request.sid:
@@ -127,23 +114,19 @@ def register_socket_events(socketio):
                 break
         
         if user_id:
-            # Clean up user from all rooms
             for room in list(online_users.keys()):
                 if user_id in online_users[room]:
                     online_users[room].discard(user_id)
                     if user_id in typing_users.get(room, set()):
                         typing_users[room].discard(user_id)
                     
-                    # Emit updated online count to all users in the room
                     emit('online_count', {
                         'room': room,
                         'count': len(online_users[room])
                     }, room=room, broadcast=True)
                     
-                    # Emit status message to all users in the room
                     emit('status', {
                         'msg': f'👋 {user_id} has disconnected'
                     }, room=room, broadcast=True)
             
-            # Remove the user from the socket mapping
-            del user_socket_map[user_id] 
+            del user_socket_map[user_id]

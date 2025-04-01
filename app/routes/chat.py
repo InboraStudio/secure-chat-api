@@ -34,10 +34,8 @@ def get_messages(room_id):
     if room_id not in chat_rooms:
         chat_rooms[room_id] = []
     
-    # Get the requesting user's ID from the query parameters
     user_id = request.args.get('user_id')
     
-    # Mark messages as sent/received based on the requesting user
     messages = []
     for msg in chat_rooms[room_id]:
         msg_copy = msg.copy()

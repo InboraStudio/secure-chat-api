@@ -14,13 +14,11 @@ import socket
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Secret keys for JWT authentication
 SECRET_KEY = os.getenv("SECRET_KEY", "mysecretkey")
 JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
 ENCRYPTION_KEY = Fernet.generate_key()
 fernet = Fernet(ENCRYPTION_KEY)
 
-# Store messages securely
 chat_rooms = {}
 room_passwords = {}
 room_verified_ips = {}
@@ -28,9 +26,8 @@ user_profiles = {}
 online_users = {}
 message_reactions = {}
 typing_users = {}
-user_socket_map = {}  # Map user_id to socket_id
+user_socket_map = {}
 
-# Function to generate a JWT token for authentication
 def generate_token(room_id):
     payload = {
         "room_id": room_id,
@@ -38,7 +35,6 @@ def generate_token(room_id):
     }
     return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
 
-# Function to verify JWT token
 def verify_token(token):
     try:
         decoded = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
@@ -46,7 +42,6 @@ def verify_token(token):
     except:
         return None
 
-# Function to get client's IP
 def get_client_ip():
     return request.headers.get("X-Forwarded-For", request.remote_addr)
 
@@ -56,7 +51,6 @@ def encrypt_message(message):
 def decrypt_message(encrypted_message):
     return fernet.decrypt(encrypted_message.encode()).decode()
 
-# Default homepage route
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -111,10 +105,8 @@ def on_join(data):
     room = data['room']
     user_id = data['user_id']
     
-    # Store the mapping between user_id and socket_id
     user_socket_map[user_id] = request.sid
     
-    # Initialize room data if not exists
     if room not in chat_rooms:
         chat_rooms[room] = []
     if room not in online_users:
@@ -124,17 +116,14 @@ def on_join(data):
     if room not in typing_users:
         typing_users[room] = set()
     
-    # Add user to room
     join_room(room)
     online_users[room].add(user_id)
     
-    # Emit updated online count to all users in the room
     emit('online_count', {
         'room': room,
         'count': len(online_users[room])
     }, room=room, broadcast=True)
     
-    # Emit status message to all users in the room
     emit('status', {
         'msg': f'👋 {user_id} has joined the room'
     }, room=room, broadcast=True)
@@ -149,20 +138,17 @@ def on_leave(data):
         if user_id in typing_users.get(room, set()):
             typing_users[room].discard(user_id)
         
-        # Emit updated online count to all users in the room
         emit('online_count', {
             'room': room,
             'count': len(online_users[room])
         }, room=room, broadcast=True)
         
-        # Emit status message to all users in the room
         emit('status', {
             'msg': f'👋 {user_id} has left the room'
         }, room=room, broadcast=True)
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    # Find the user_id associated with this socket
     user_id = None
     for uid, sid in user_socket_map.items():
         if sid == request.sid:
@@ -170,25 +156,21 @@ def handle_disconnect():
             break
     
     if user_id:
-        # Clean up user from all rooms
         for room in list(online_users.keys()):
             if user_id in online_users[room]:
                 online_users[room].discard(user_id)
                 if user_id in typing_users.get(room, set()):
                     typing_users[room].discard(user_id)
                 
-                # Emit updated online count to all users in the room
                 emit('online_count', {
                     'room': room,
                     'count': len(online_users[room])
                 }, room=room, broadcast=True)
                 
-                # Emit status message to all users in the room
                 emit('status', {
                     'msg': f'👋 {user_id} has disconnected'
                 }, room=room, broadcast=True)
         
-        # Remove the user from the socket mapping
         del user_socket_map[user_id]
 
 @socketio.on('message')
@@ -197,15 +179,13 @@ def handle_message(data):
     user_id = data['user_id']
     message = data['message']
     
-    # Initialize room messages if not exists
     if room not in chat_rooms:
         chat_rooms[room] = []
     
-    # Add message with timestamp and formatted date/time
     timestamp = int(time.time() * 1000)
     current_time = datetime.datetime.now()
     formatted_date = current_time.strftime("%Y-%m-%d")
-    formatted_time = current_time.strftime("%I:%M %p")  # 12-hour format with AM/PM
+    formatted_time = current_time.strftime("%I:%M %p")
     
     message_data = {
         'user_id': user_id,
@@ -213,16 +193,14 @@ def handle_message(data):
         'timestamp': timestamp,
         'date': formatted_date,
         'time': formatted_time,
-        'is_sent': True  # This will be used to identify sent messages
+        'is_sent': True
     }
     
     chat_rooms[room].append(message_data)
     
-    # Keep only last 100 messages per room
     if len(chat_rooms[room]) > 100:
         chat_rooms[room] = chat_rooms[room][-100:]
     
-    # Emit message to room with sender information
     emit('message', message_data, room=room, broadcast=True)
 
 @socketio.on('typing')
@@ -239,7 +217,6 @@ def handle_typing(data):
     else:
         typing_users[room].discard(user_id)
     
-    # Emit typing status to room
     emit('typing_status', {
         'typing_users': list(typing_users[room])
     }, room=room)
@@ -268,10 +245,8 @@ def get_messages(room_id):
     if room_id not in chat_rooms:
         chat_rooms[room_id] = []
     
-    # Get the requesting user's ID from the query parameters
     user_id = request.args.get('user_id')
     
-    # Mark messages as sent/received based on the requesting user
     messages = []
     for msg in chat_rooms[room_id]:
         msg_copy = msg.copy()
@@ -287,12 +262,11 @@ def clear_chat(room_id):
         message_reactions[room_id] = {}
     return jsonify({"success": True, "message": "Chat cleared!"})
 
-# Route to verify an IP (Room creator must approve)
 @app.route('/room/<room_id>/verify_ip', methods=['POST'])
 def verify_ip(room_id):
     data = request.get_json()
     password = data.get("password")
-    user_ip = data.get("ip")  # Room creator submits the IP to be allowed
+    user_ip = data.get("ip")
 
     if room_passwords.get(room_id) != password:
         return jsonify({"error": "Invalid password!"}), 401
@@ -304,7 +278,6 @@ def verify_ip(room_id):
 
     return jsonify({"success": True, "message": f"IP {user_ip} verified for room {room_id}!"})
 
-# Route to send a message (Only if IP verified or password provided)
 @app.route('/chat/<room_id>', methods=['POST'])
 def send_message(room_id):
     client_ip = get_client_ip()
@@ -312,7 +285,6 @@ def send_message(room_id):
     message = data.get("message")
     password = data.get("password")
 
-    # Verify access: Either IP must be verified or correct password must be provided
     if client_ip not in room_verified_ips.get(room_id, []) and room_passwords.get(room_id) != password:
         return jsonify({"error": "Access denied! Verify your IP or provide the correct password."}), 401
 
@@ -322,7 +294,6 @@ def send_message(room_id):
     chat_rooms[room_id].append(f"[{client_ip}] {message}")
     return jsonify({"success": True, "message": "Message sent securely!"})
 
-# Route to view messages in a browser (Password-Protected)
 @app.route('/chat/<room_id>/web', methods=['GET'])
 def chat_web(room_id):
     client_ip = get_client_ip()
@@ -334,12 +305,10 @@ def chat_web(room_id):
     messages = chat_rooms.get(room_id, [])
     return render_template("chat.html", room_id=room_id, messages=messages)
 
-# ✅ Admin Dashboard Route
 @app.route('/admin')
 def admin_panel():
     return render_template("admin.html")
 
-# ✅ Admin Route: Verify a User's IP
 @app.route('/admin/verify_ip', methods=['POST'])
 def admin_verify_ip():
     room_id = request.form.get("room_id")
@@ -349,18 +318,15 @@ def admin_verify_ip():
     if not room_id or not ip or not password:
         return jsonify({"error": "All fields are required!"}), 400
 
-    # Check if the password is correct
     if room_passwords.get(room_id) != password:
         return jsonify({"error": "Unauthorized access!"}), 401
 
-    # Add the IP to the verified list
     if room_id not in room_verified_ips:
         room_verified_ips[room_id] = []
     
     room_verified_ips[room_id].append(ip)
     return jsonify({"success": True, "message": f"IP {ip} verified for room {room_id}!"})
 
-# ✅ Admin Route: Clear Chat Messages
 @app.route('/admin/clear_chat', methods=['POST'])
 def admin_clear_chat():
     room_id = request.form.get("room_id")
@@ -373,7 +339,6 @@ def admin_clear_chat():
         chat_rooms[room_id] = []
     return jsonify({"success": True, "message": "Chat cleared successfully!"})
 
-# ✅ Admin Route: Delete Chat Room
 @app.route('/admin/delete_room', methods=['POST'])
 def admin_delete_room():
     room_id = request.form.get("room_id")
@@ -388,7 +353,6 @@ def admin_delete_room():
     return jsonify({"success": True, "message": f"Room {room_id} deleted!"})
 
 if __name__ == '__main__':
-    # Get the local IP address
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     
@@ -397,5 +361,4 @@ if __name__ == '__main__':
     print(f"Access the chat at: http://{local_ip}:10000")
     print("\nPress Ctrl+C to stop the server.\n")
     
-    # Run the server on all network interfaces
     socketio.run(app, host='0.0.0.0', port=10000, debug=True)
