@@ -209,7 +209,78 @@
             backdrop-filter: blur(8px);
         }
 
-        input[type="text"] {
+        .media-button {
+            background: none;
+            padding: 12px;
+            box-shadow: none;
+            border-radius: 50%;
+            font-size: 1.25rem;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        
+        .media-button:hover {
+            background: rgba(240, 242, 245, 0.9);
+            box-shadow: none;
+            color: var(--primary-color);
+        }
+        
+        .media-preview {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 12px;
+            margin-top: 8px;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+        
+        .media-preview:hover {
+            transform: scale(1.03);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .media-lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .media-lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .media-lightbox-content {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+        
+        .media-lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        input[type="text"], input[type="password"] {
             flex: 1;
             padding: 16px 24px;
             border: 1px solid var(--border-color);
@@ -220,7 +291,7 @@
             background: rgba(255, 255, 255, 0.9);
         }
 
-        input[type="text"]:focus {
+        input[type="text"]:focus, input[type="password"]:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(0,132,255,0.1);
             background: white;
@@ -393,12 +464,14 @@
             text-align: center;
             color: var(--text-secondary);
             font-style: italic;
-            margin: 16px 0;
+            margin: 8px auto;
             font-size: 0.9rem;
             padding: 8px 16px;
             background: rgba(240, 242, 245, 0.8);
             border-radius: 12px;
-            display: inline-block;
+            display: block;
+            width: fit-content;
+            max-width: 80%;
             backdrop-filter: blur(4px);
             transition: all 0.3s ease;
             opacity: 1;
@@ -441,6 +514,109 @@
             background: rgba(168, 168, 168, 0.9);
         }
 
+        /* Setup Modal Styles */
+        .setup-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .setup-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            width: 500px;
+            max-width: 90%;
+            overflow: hidden;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .setup-header {
+            padding: 24px;
+            background: var(--primary-color);
+            color: white;
+            text-align: center;
+        }
+
+        .setup-header h2 {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .setup-header p {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .setup-body {
+            padding: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .setup-footer {
+            padding: 24px;
+            border-top: 1px solid var(--border-color);
+            text-align: right;
+        }
+
+        .setup-tabs {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setup-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+        }
+
+        .setup-tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .setup-tab-content {
+            display: none;
+        }
+
+        .setup-tab-content.active {
+            display: block;
+        }
+
         @media (max-width: 1200px) {
             .container {
                 max-width: 1400px;
@@ -481,10 +657,67 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Setup Modal -->
+    <div class="setup-modal" id="setupModal">
+        <div class="setup-card">
+            <div class="setup-header">
+                <h2>Welcome to Secure Chat</h2>
+                <p>Set up your profile and join a room</p>
+            </div>
+            <div class="setup-body">
+                <div class="setup-tabs">
+                    <div class="setup-tab active" onclick="switchTab('profile')">1. Create Profile</div>
+                    <div class="setup-tab" onclick="switchTab('room')">2. Join Room</div>
+                </div>
+                
+                <div class="setup-tab-content active" id="profileTab">
+                    <div class="form-group">
+                        <label for="setupUserId">User ID</label>
+                        <input type="text" id="setupUserId" placeholder="Enter a unique user ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupUsername">Display Name</label>
+                        <input type="text" id="setupUsername" placeholder="Enter your display name">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupAvatar">Avatar URL (optional)</label>
+                        <input type="text" id="setupAvatar" placeholder="Enter URL for your avatar image">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupStatus">Status Message (optional)</label>
+                        <input type="text" id="setupStatus" placeholder="What's on your mind?">
+                    </div>
+                </div>
+                
+                <div class="setup-tab-content" id="roomTab">
+                    <div class="form-group">
+                        <label for="setupRoomId">Room ID</label>
+                        <input type="text" id="setupRoomId" placeholder="Enter a room ID (e.g., chat123)">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupRoomPassword">Room Password</label>
+                        <input type="password" id="setupRoomPassword" placeholder="Enter password for this room">
+                    </div>
+                </div>
+            </div>
+            <div class="setup-footer">
+                <button id="setupBack" onclick="setupBack()" style="background: #6c757d; display: none;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button id="setupNext" onclick="setupNext()">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button id="setupComplete" onclick="completeSetup()" style="display: none;">
+                    Start Chatting <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="chatContainer" style="display: none;">
         <div class="sidebar">
             <div class="user-profile">
-                <div class="avatar">
+                <div class="avatar" id="userAvatar">
                     <i class="fas fa-user"></i>
                 </div>
                 <div class="user-info">
@@ -495,15 +728,7 @@
             <div class="room-list" id="roomList">
                 <div class="room-item active">
                     <i class="fas fa-hashtag"></i>
-                    General
-                </div>
-                <div class="room-item">
-                    <i class="fas fa-door-open"></i>
-                    Room 1
-                </div>
-                <div class="room-item">
-                    <i class="fas fa-door-open"></i>
-                    Room 2
+                    <span id="currentRoomSidebar">General</span>
                 </div>
             </div>
         </div>
@@ -519,21 +744,153 @@
             <div class="typing-indicator" id="typingIndicator"></div>
             <div class="message-input">
                 <input type="text" id="messageInput" placeholder="Type a message...">
-                <button onclick="sendMessage()">
-                    <i class="fas fa-paper-plane"></i>
-                    Send
-                </button>
+                <button onclick="toggleMediaUpload()" class="media-button" id="mediaBtn"><i class="fas fa-image"></i></button>
+                <input type="file" id="mediaInput" style="display:none" accept="image/*,video/*">
+                <button onclick="sendMessage()">Send <i class="fas fa-paper-plane"></i></button>
             </div>
         </div>
+    </div>
+
+    <!-- Media Lightbox -->
+    <div class="media-lightbox" id="mediaLightbox">
+        <div class="media-lightbox-close" onclick="closeLightbox()">×</div>
+        <img src="" class="media-lightbox-content" id="lightboxImage">
+        <video src="" class="media-lightbox-content" id="lightboxVideo" controls></video>
     </div>
 
     <script>
         const socket = io();
         let currentRoom = 'general';
-        let userId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let userId = '';
+        let username = '';
         let isTyping = false;
         let typingTimeout;
         let isConnected = false;
+        let currentTab = 'profile';
+
+        // Setup wizard functions
+        function switchTab(tab) {
+            document.querySelectorAll('.setup-tab').forEach(t => {
+                t.classList.remove('active');
+            });
+            document.querySelectorAll('.setup-tab-content').forEach(c => {
+                c.classList.remove('active');
+            });
+            
+            document.querySelector(`.setup-tab:nth-child(${tab === 'profile' ? 1 : 2})`).classList.add('active');
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            currentTab = tab;
+            
+            // Update buttons
+            if (tab === 'profile') {
+                document.getElementById('setupBack').style.display = 'none';
+                document.getElementById('setupNext').style.display = 'inline-flex';
+                document.getElementById('setupComplete').style.display = 'none';
+            } else {
+                document.getElementById('setupBack').style.display = 'inline-flex';
+                document.getElementById('setupNext').style.display = 'none';
+                document.getElementById('setupComplete').style.display = 'inline-flex';
+            }
+        }
+        
+        function setupNext() {
+            // Validate profile data
+            userId = document.getElementById('setupUserId').value.trim();
+            username = document.getElementById('setupUsername').value.trim();
+            
+            if (!userId || !username) {
+                alert('Please enter a User ID and Display Name');
+                return;
+            }
+            
+            // Create the profile on the server
+            const avatarUrl = document.getElementById('setupAvatar').value.trim();
+            const statusMessage = document.getElementById('setupStatus').value.trim();
+            
+            fetch('/user/profile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: userId,
+                    username: username,
+                    avatar: avatarUrl,
+                    status_message: statusMessage
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to create profile');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Switch to room tab
+                switchTab('room');
+            })
+            .catch(error => {
+                console.error('Error creating profile:', error);
+                alert('Failed to create profile. Please try again.');
+            });
+        }
+        
+        function setupBack() {
+            switchTab('profile');
+        }
+        
+        function completeSetup() {
+            const roomId = document.getElementById('setupRoomId').value.trim();
+            const roomPassword = document.getElementById('setupRoomPassword').value.trim();
+            
+            if (!roomId || !roomPassword) {
+                alert('Please enter a Room ID and Password');
+                return;
+            }
+            
+            // Create or join the room
+            fetch('/room/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    room_id: roomId,
+                    password: roomPassword
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide setup modal and show chat
+                document.getElementById('setupModal').style.display = 'none';
+                document.getElementById('chatContainer').style.display = 'flex';
+                
+                // Update UI with user info
+                document.getElementById('username').textContent = username;
+                document.getElementById('currentRoom').textContent = roomId;
+                document.getElementById('currentRoomSidebar').textContent = roomId;
+                
+                // Update avatar if provided
+                const avatarUrl = document.getElementById('setupAvatar').value.trim();
+                if (avatarUrl) {
+                    document.getElementById('userAvatar').innerHTML = `<img src="${avatarUrl}" alt="${username}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
+                }
+                
+                // Connect to the room
+                currentRoom = roomId;
+                if (isConnected) {
+                    socket.emit('join', { room: currentRoom, user_id: userId });
+                }
+                
+                // Load messages
+                loadRoomMessages(currentRoom);
+            })
+            .catch(error => {
+                console.error('Error creating/joining room:', error);
+                alert('Failed to create or join room. Please try again.');
+            });
+        }
 
         // Handle window/tab closing
         window.addEventListener('beforeunload', () => {
@@ -558,8 +915,7 @@
         socket.on('connect', () => {
             isConnected = true;
             document.getElementById('status').textContent = 'Online';
-            // Join the room immediately after connection
-            socket.emit('join', { room: currentRoom, user_id: userId });
+            // Join the room after profile and room setup is complete
         });
 
         socket.on('disconnect', () => {
@@ -570,22 +926,86 @@
             countElement.innerHTML = `<i class="fas fa-circle"></i><span>0 online</span>`;
         });
 
-        document.getElementById('username').textContent = userId;
-
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
+            const mediaInput = document.getElementById('mediaInput');
             
-            if (message && isConnected) {
+            if (isConnected) {
+                if (message || mediaInput.files.length > 0) {
                 // Clear input first
                 input.value = '';
                 
-                // Emit the message to the server
+                    // If there's a media file to upload
+                    if (mediaInput.files.length > 0) {
+                        const file = mediaInput.files[0];
+                        if (file.size > 5 * 1024 * 1024) { // Reduced to 5MB limit
+                            alert('File size exceeds 5MB limit');
+                            return;
+                        }
+                        
+                        // Show loading indicator
+                        const sendButton = document.querySelector('.message-input button:last-child');
+                        const originalText = sendButton.innerHTML;
+                        sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        sendButton.disabled = true;
+                        
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const base64Data = e.target.result;
+                            
+                            // Send message with media
+                            socket.emit('message', {
+                                room: currentRoom,
+                                user_id: userId,
+                                message: message || '',
+                                media: {
+                                    type: file.type,
+                                    data: base64Data,
+                                    name: file.name
+                                }
+                            }, function(ack) {
+                                // Callback when server acknowledges receipt
+                                console.log("Media message acknowledged:", ack);
+                                
+                                // Reset button
+                                sendButton.innerHTML = originalText;
+                                sendButton.disabled = false;
+                            });
+                            
+                            // Reset media input and button
+                            mediaInput.value = '';
+                            document.getElementById('mediaBtn').innerHTML = '<i class="fas fa-image"></i>';
+                            document.getElementById('mediaBtn').style.color = 'var(--text-secondary)';
+                            
+                            console.log("Media message sent:", {
+                                type: file.type,
+                                size: base64Data.length,
+                                name: file.name
+                            });
+                        };
+                        
+                        reader.onerror = function(e) {
+                            console.error("FileReader error:", e);
+                            alert("Error reading file: " + e);
+                            
+                            // Reset button
+                            sendButton.innerHTML = originalText;
+                            sendButton.disabled = false;
+                        };
+                        
+                        reader.readAsDataURL(file);
+                    } else {
+                        // Send text-only message
                 socket.emit('message', {
                     room: currentRoom,
                     user_id: userId,
                     message: message
                 });
+                    }
+                }
+            } else {
+                alert("You are not connected. Please refresh the page and try again.");
             }
         }
 
@@ -617,6 +1037,15 @@
         });
 
         socket.on('message', (data) => {
+            console.log("Received message data:", Object.keys(data));
+            if (data.media) {
+                console.log("Received media message:", {
+                    type: data.media.type,
+                    size: data.media.data.length,
+                    name: data.media.name
+                });
+            }
+            
             const messageContainer = document.getElementById('messageContainer');
             
             // Check if we need to add a date separator
@@ -631,15 +1060,48 @@
             
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${data.user_id === userId ? 'sent' : ''}`;
-            messageDiv.setAttribute('data-message-id', data.timestamp);
+            messageDiv.setAttribute('data-message-id', data.id || data.timestamp);
             
             const messageWrapper = document.createElement('div');
             messageWrapper.className = 'message-wrapper';
             
             const content = document.createElement('div');
             content.className = 'message-content';
+            
+            // Add text message if it exists
+            if (data.message && data.message.trim()) {
             content.textContent = data.message;
+            }
             content.dataset.date = data.date;
+            
+            // Handle media content if present
+            if (data.media && data.media.data) {
+                if (data.media.type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = data.media.data;
+                    img.className = 'media-preview';
+                    img.alt = data.media.name || 'Image';
+                    img.loading = 'lazy';
+                    img.onclick = function() {
+                        openLightbox(data.media.data, 'image');
+                    };
+                    content.appendChild(document.createElement('br'));
+                    content.appendChild(img);
+                } else if (data.media.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = data.media.data;
+                    video.className = 'media-preview';
+                    video.controls = true;
+                    video.preload = 'metadata';
+                    video.onclick = function(e) {
+                        if (e.target === video) {
+                            openLightbox(data.media.data, 'video');
+                        }
+                    };
+                    content.appendChild(document.createElement('br'));
+                    content.appendChild(video);
+                }
+            }
             
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message-time';
@@ -665,10 +1127,23 @@
 
         socket.on('status', (data) => {
             const messageContainer = document.getElementById('messageContainer');
+            
+            // Create a wrapper div for status messages if it doesn't exist
+            let statusWrapper = document.getElementById('statusMessagesWrapper');
+            if (!statusWrapper) {
+                statusWrapper = document.createElement('div');
+                statusWrapper.id = 'statusMessagesWrapper';
+                statusWrapper.style.display = 'flex';
+                statusWrapper.style.flexDirection = 'column';
+                statusWrapper.style.alignItems = 'center';
+                statusWrapper.style.width = '100%';
+                messageContainer.appendChild(statusWrapper);
+            }
+            
             const statusDiv = document.createElement('div');
             statusDiv.className = 'status-message';
             statusDiv.textContent = data.msg;
-            messageContainer.appendChild(statusDiv);
+            statusWrapper.appendChild(statusDiv);
             messageContainer.scrollTop = messageContainer.scrollHeight;
 
             // Remove the status message after 5 seconds
@@ -677,13 +1152,17 @@
                 statusDiv.style.transform = 'translateY(-10px)';
                 setTimeout(() => {
                     statusDiv.remove();
+                    // Remove wrapper if empty
+                    if (statusWrapper.children.length === 0) {
+                        statusWrapper.remove();
+                    }
                 }, 300);
             }, 5000);
         });
 
         socket.on('typing_status', (data) => {
             const indicator = document.getElementById('typingIndicator');
-            if (data.typing_users.length > 0) {
+            if (data.typing_users && data.typing_users.length > 0) {
                 const typingUsers = data.typing_users.filter(id => id !== userId);
                 if (typingUsers.length > 0) {
                     indicator.textContent = `${typingUsers.join(', ')} ${typingUsers.length === 1 ? 'is' : 'are'} typing...`;
@@ -731,7 +1210,7 @@
                         
                         const messageDiv = document.createElement('div');
                         messageDiv.className = `message ${msg.is_sent ? 'sent' : ''}`;
-                        messageDiv.setAttribute('data-message-id', msg.timestamp);
+                        messageDiv.setAttribute('data-message-id', msg.id || msg.timestamp);
                         
                         const messageWrapper = document.createElement('div');
                         messageWrapper.className = 'message-wrapper';
@@ -761,41 +1240,116 @@
                 });
         }
 
-        // Handle room switching
-        document.querySelectorAll('.room-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const newRoom = item.textContent.trim().toLowerCase();
-                if (newRoom !== currentRoom) {
-                    // Leave current room
-                    if (isConnected) {
-                        socket.emit('leave', { room: currentRoom, user_id: userId });
-                    }
-                    
-                    // Update UI
-                    currentRoom = newRoom;
-                    document.getElementById('currentRoom').textContent = item.textContent.trim();
-                    
-                    // Clear messages and load new room messages
-                    const messageContainer = document.getElementById('messageContainer');
-                    messageContainer.innerHTML = '';
-                    loadRoomMessages(currentRoom);
-                    
-                    // Update active room in sidebar
-                    document.querySelectorAll('.room-item').forEach(room => {
-                        room.classList.remove('active');
-                    });
-                    item.classList.add('active');
-                    
-                    // Join new room
-                    if (isConnected) {
-                        socket.emit('join', { room: currentRoom, user_id: userId });
-                    }
-                }
-            });
+        // Handle file uploads
+        socket.on('file_uploaded', (fileInfo) => {
+            const messageContainer = document.getElementById('messageContainer');
+            
+            // Create a message for the file upload
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${fileInfo.uploaded_by === userId ? 'sent' : ''}`;
+            
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = 'message-wrapper';
+            
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            
+            // Create file attachment
+            const fileLink = document.createElement('a');
+            fileLink.href = `/chat/${currentRoom}/files/${fileInfo.stored_filename}?password=${document.getElementById('setupRoomPassword').value}`;
+            fileLink.target = "_blank";
+            fileLink.innerHTML = `<i class="fas fa-file"></i> ${fileInfo.filename} (${Math.round(fileInfo.size / 1024)} KB)`;
+            fileLink.style.display = 'block';
+            fileLink.style.textDecoration = 'none';
+            fileLink.style.color = 'inherit';
+            fileLink.style.padding = '8px';
+            
+            content.appendChild(fileLink);
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            const date = new Date(fileInfo.uploaded_at);
+            timeDiv.textContent = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageWrapper.appendChild(content);
+            messageWrapper.appendChild(timeDiv);
+            messageDiv.appendChild(messageWrapper);
+            messageContainer.appendChild(messageDiv);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
         });
 
-        // Load messages when first joining
-        loadRoomMessages(currentRoom);
+        // Message deletion handler
+        socket.on('message_deleted', (data) => {
+            const message = document.querySelector(`[data-message-id="${data.message_id}"]`);
+            if (message) {
+                message.style.opacity = '0.5';
+                message.querySelector('.message-content').textContent = 'This message was deleted';
+            }
+        });
+
+        // Media handling functions
+        function toggleMediaUpload() {
+            document.getElementById('mediaInput').click();
+        }
+        
+        document.getElementById('mediaInput').addEventListener('change', function(e) {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                // Update the media button to show file name
+                document.getElementById('mediaBtn').innerHTML = '<i class="fas fa-check"></i>';
+                document.getElementById('mediaBtn').style.color = 'var(--primary-color)';
+            } else {
+                document.getElementById('mediaBtn').innerHTML = '<i class="fas fa-image"></i>';
+                document.getElementById('mediaBtn').style.color = 'var(--text-secondary)';
+            }
+        });
+        
+        function openLightbox(src, type) {
+            const lightbox = document.getElementById('mediaLightbox');
+            const lightboxImage = document.getElementById('lightboxImage');
+            const lightboxVideo = document.getElementById('lightboxVideo');
+            
+            if (type === 'image') {
+                lightboxImage.src = src;
+                lightboxImage.style.display = 'block';
+                lightboxVideo.style.display = 'none';
+            } else if (type === 'video') {
+                lightboxVideo.src = src;
+                lightboxVideo.style.display = 'block';
+                lightboxImage.style.display = 'none';
+            }
+            
+            lightbox.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeLightbox() {
+            const lightbox = document.getElementById('mediaLightbox');
+            lightbox.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            
+            // Reset sources
+            document.getElementById('lightboxImage').src = '';
+            document.getElementById('lightboxVideo').src = '';
+        }
+
+        // When page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // First, check if Socket.IO is working
+            socket = io();
+            
+            socket.on('connect_error', function(error) {
+                console.error('Connection error:', error);
+                alert('Connection error: ' + error.message);
+            });
+            
+            socket.on('error', function(error) {
+                console.error('Socket error:', error);
+                alert('Socket error: ' + error);
+            });
+            
+            // We'll continue with the rest of the code once socket is connected
+        });
     </script>
 </body>
 </html> 

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Setup Modal -->
+    <div class="setup-modal" id="setupModal">
+        <div class="setup-card">
+            <div class="setup-header">
+                <h2>Welcome to Secure Chat</h2>
+                <p>Set up your profile and join a room</p>
+            </div>
+            <div class="setup-body">
+                <div class="setup-tabs">
+                    <div class="setup-tab active">1. Create Profile</div>
+                    <div class="setup-tab">2. Join Room</div>
+                </div>
+                
+                <div class="setup-tab-content active" id="profileTab">
+                    <div class="form-group">
+                        <label for="setupUserId">User ID</label>
+                        <input type="text" id="setupUserId" placeholder="Enter a unique user ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupUsername">Display Name</label>
+                        <input type="text" id="setupUsername" placeholder="Enter your display name">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupAvatarFile">Avatar (optional)</label>
+                        <input type="file" id="setupAvatarFile" accept="image/*" class="file-input">
+                        <div class="file-input-preview" id="avatarPreview"></div>
+                        <!-- Hidden field to store the Base64 data -->
+                        <input type="hidden" id="setupAvatar">
+                    </div>
+                    <!-- Status message field removed -->
+                </div>
+                
+                <div class="setup-tab-content" id="roomTab">
+                    <div class="form-group">
+                        <label for="setupRoomId">Room ID</label>
+                        <input type="text" id="setupRoomId" placeholder="Enter a room ID (e.g., chat123)">
+                    </div>
+                    <div class="form-group">
+                        <label for="setupRoomPassword">Room Password</label>
+                        <input type="password" id="setupRoomPassword" placeholder="Enter password for this room">
+                    </div>
+                </div>
+            </div>
+            <div class="setup-footer">
+                <button id="setupBack" style="background: #6c757d; display: none;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button id="setupNext">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+                <button id="setupComplete" style="display: none;">
+                    Start Chatting <i class="fas fa-check"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="chatContainer" style="display: none;">
+        <div class="sidebar">
+            <div class="user-profile">
+                <div class="avatar" id="userAvatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <h3 id="username">User</h3>
+                    <small id="status">Online</small>
+                </div>
+            </div>
+            <div class="room-list" id="roomList">
+                <div class="room-item active">
+                    <i class="fas fa-hashtag"></i>
+                    <span id="currentRoomSidebar">General</span>
+                </div>
+            </div>
+        </div>
+        <div class="chat-area">
+            <div class="chat-header">
+                <h2 id="currentRoom">General</h2>
+                <div id="onlineCount">
+                    <i class="fas fa-circle"></i>
+                    <span>0 online</span>
+                </div>
+            </div>
+            <div class="chat-messages scrollbar-custom" id="messageContainer"></div>
+            <div class="typing-indicator" id="typingIndicator"></div>
+            <div class="message-input">
+                <input type="text" id="messageInput" placeholder="Type a message...">
+                <button id="mediaBtn" class="media-button"><i class="fas fa-image"></i></button>
+                <input type="file" id="mediaInput" style="display:none" accept="image/*,video/*">
+                <button id="sendBtn">Send <i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Media Lightbox -->
+    <div class="media-lightbox" id="mediaLightbox">
+        <div class="media-lightbox-close">×</div>
+        <img src="" class="media-lightbox-content" id="lightboxImage">
+        <video src="" class="media-lightbox-content" id="lightboxVideo" controls></video>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/media.js"></script>
+    <script src="js/setup.js"></script>
+</body>
+</html> 
